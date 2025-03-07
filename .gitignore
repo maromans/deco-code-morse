@@ -1,0 +1,25 @@
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de logs
+logs/
+*.log
+npm-debug.log*
+
+# Dependencias y entornos virtuales
+node_modules/
+venv/
+.env
+
+# Archivos compilados
+*.pyc
+__pycache__/
+
+# Archivos específicos a ignorar
+.pre-commit-config.yaml
+README.md
+init_project.sh
+requirements.txt
+setup.cfg
+
