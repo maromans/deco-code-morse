@@ -17,10 +17,15 @@ MORSE_CODE_DICT = {
 # Configuración de audio
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 44100  # Frecuencia de muestreo
-CHUNK = 1024  # Tamaño del bloque de audio
-THRESHOLD = 500  # Umbral de detección de sonido
-DOT_LENGTH = 0.2  # Duración de un punto en segundos
+RATE = 1000  # Frecuencia de muestreo
+CHUNK = 1024 # Tamaño del bloque de audio
+THRESHOLD = 300  # Umbral de detección de sonido
+
+# Duraciones en segundos
+DOT_LENGTH = 0.3  # Punto
+DASH_LENGTH = DOT_LENGTH * 3  # Raya
+LETTER_GAP = DOT_LENGTH * 3  # Espacio entre letras
+WORD_GAP = DOT_LENGTH * 7  # Espacio entre palabras
 
 def detect_morse():
     p = pyaudio.PyAudio()
@@ -28,12 +33,14 @@ def detect_morse():
                     rate=RATE, input=True,
                     frames_per_buffer=CHUNK)
     
-    print("Escuchando código Morse...")
-    
-    morse_sequence = ""
+    print("Escuchando código Morse...\n")
+
+    decoded_text = ""  # Texto decodificado en tiempo real
+    current_morse_letter = ""  # Código Morse de la letra en construcción
     last_sound_time = None
     detecting = False
-    
+    silence_start = None
+
     try:
         while True:
             data = np.frombuffer(stream.read(CHUNK, exception_on_overflow=False), dtype=np.int16)
@@ -43,20 +50,30 @@ def detect_morse():
                 if not detecting:
                     detecting = True
                     last_sound_time = time.time()
+                    if silence_start is not None:
+                        silence_duration = time.time() - silence_start
+                        if silence_duration >= WORD_GAP:
+                            decoded_text += " "  # Espacio entre palabras
+                            print("\nPalabra detectada:", decoded_text)
+                        elif silence_duration >= LETTER_GAP:
+                            # Convertir Morse a letra y agregar al texto decodificado
+                            letter = MORSE_CODE_DICT.get(current_morse_letter, "?")
+                            decoded_text += letter
+                            print("Letra detectada:", letter, " | Texto hasta ahora:", decoded_text)
+                            current_morse_letter = ""  # Reiniciar código Morse de la letra actual
+
+                silence_start = None
             else:
                 if detecting:
                     duration = time.time() - last_sound_time
                     detecting = False
                     
-                    if duration < DOT_LENGTH:
-                        morse_sequence += '.'  # Punto
-                    else:
-                        morse_sequence += '-'  # Raya
+                    if DOT_LENGTH * 0.8 <= duration <= DOT_LENGTH * 1.2:
+                        current_morse_letter += '.'  # Punto
+                    elif DASH_LENGTH * 0.8 <= duration <= DASH_LENGTH * 1.2:
+                        current_morse_letter += '-'  # Raya
                     
-                    print(f"Detectado: {morse_sequence}")
-                    
-                    # Espacio entre letras
-                    time.sleep(0.2)
+                    silence_start = time.time()
                 
     except KeyboardInterrupt:
         print("\nFinalizando...")
@@ -64,10 +81,13 @@ def detect_morse():
         stream.close()
         p.terminate()
 
-        # Convertir Morse a texto
-        words = morse_sequence.split(" ")  # Separar palabras
-        decoded_message = "".join([MORSE_CODE_DICT.get(letter, "?") for letter in words])
-        print(f"\nMensaje decodificado: {decoded_message}")
+        # Convertir última letra si quedó sin procesar
+        if current_morse_letter:
+            letter = MORSE_CODE_DICT.get(current_morse_letter, "?")
+            decoded_text += letter
+            print("Letra final detectada:", letter)
+
+        print(f"\nMensaje final decodificado: {decoded_text}")
 
 # Ejecutar la detección
 detect_morse()

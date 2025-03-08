@@ -20,8 +20,8 @@ CHANNELS = 1  # Mono (un solo canal)
 RATE = 44100  # Frecuencia de muestreo: 44.1 kHz (calidad de CD)
 CHUNK = 1024  # Tamaño de cada bloque de datos de audio que se procesa
 THRESHOLD = 500  # Umbral para detectar si el sonido es lo suficientemente fuerte
-DOT_LENGTH = 0.2  # Duración de un punto en código morse (en segundos)
-WORD_GAP = 0.7  # Duración de la pausa entre palabras (en segundos)
+DOT_LENGTH = 0.1  # Duración de un punto en código morse (en segundos)
+WORD_GAP = 0.8  # Duración de la pausa entre palabras (en segundos)
 
 # Función principal para detectar código morse desde un micrófono
 def detect_morse():
