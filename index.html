@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Detector de Código Morse - Proyecto en Pythonista</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+        }
+        h1 {
+            margin: 0;
+        }
+        section {
+            margin: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        code {
+            display: block;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+        pre {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        footer {
+            text-align: center;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Detector de Código Morse - Proyecto en Pythonista</h1>
+    </header>
+
+    <section>
+        <h2>Descripción del Proyecto</h2>
+        <p>Este proyecto está diseñado para detectar y decodificar el código Morse utilizando un micrófono en un dispositivo móvil iOS a través de Pythonista, una aplicación de Python para dispositivos móviles. El sistema graba el audio, analiza la amplitud de la señal y convierte las señales sonoras en puntos y rayas para finalmente decodificar el mensaje en texto.</p>
+    </section>
+
+    <section>
+        <h2>Objetivo</h2>
+        <p>El objetivo principal del proyecto es crear una aplicación que detecte señales sonoras representadas en código Morse (puntos y rayas) y las convierta en texto legible en tiempo real. Esto se logra procesando las muestras de audio obtenidas a través del micrófono del dispositivo y utilizando un diccionario de código Morse para la decodificación.</p>
+    </section>
+
+    <section>
+        <h2>Código del Proyecto</h2>
+        <p>A continuación se presenta el código fuente del proyecto realizado en Pythonista para la detección de código Morse:</p>
+        <pre>
+<code>
+import sound
+import time
+import ui
+import numpy as np
+
+# Diccionario de Código Morse
+MORSE_CODE_DICT = {
+    '.-': 'A', '-...': 'B', '-.-.': 'C', '-..': 'D', '.': 'E',
+    '..-.': 'F', '--.': 'G', '....': 'H', '..': 'I', '.---': 'J',
+    '-.-': 'K', '.-..': 'L', '--': 'M', '-.': 'N', '---': 'O',
+    '.--.': 'P', '--.-': 'Q', '.-.': 'R', '...': 'S', '-': 'T',
+    '..-': 'U', '...-': 'V', '.--': 'W', '-..-': 'X', '-.--': 'Y',
+    '--..': 'Z', '-----': '0', '.----': '1', '..---': '2', '...--': '3',
+    '....-': '4', '.....': '5', '-....': '6', '--...': '7', '---..': '8',
+    '----.': '9'
+}
+
+# Configuración de parámetros de sonido
+THRESHOLD = 500  # Umbral de detección de sonido
+DOT_LENGTH = 0.2  # Duración de un punto en segundos
+WORD_GAP = 0.7  # Pausa entre palabras
+
+# Variables para almacenamiento de la secuencia de Morse
+morse_sequence = ""
+
+# Función para detectar código Morse
+def detect_morse():
+    global morse_sequence
+    # Inicia la grabación de sonido
+    mic = sound.Input(1)  # Número de canales, 1 para mono
+    mic.record(duration=3)  # Graba durante 3 segundos
+    data = mic.samples  # Obtiene los datos grabados
+
+    # Convertimos la muestra de audio a un arreglo numpy para analizar
+    data_np = np.array(data)
+    
+    # Detectamos los picos de amplitud (detecta el sonido)
+    amplitude = np.max(np.abs(data_np))
+    
+    # Si el nivel de la señal es mayor que el umbral, estamos detectando un sonido
+    if amplitude > THRESHOLD:
+        current_signal = time.time()
+        # Detectamos si es un punto o una raya dependiendo de la duración del sonido
+        duration = time.time() - current_signal
+        if duration < DOT_LENGTH:
+            morse_sequence += '.'  # Es un punto
+        else:
+            morse_sequence += '-'  # Es una raya
+    
+    return morse_sequence
+
+# Función para decodificar la secuencia de código Morse
+def decode_morse(sequence):
+    # Dividimos la secuencia en letras por el espacio
+    words = sequence.split(" ")
+    decoded_message = "".join([MORSE_CODE_DICT.get(letter, "?") for letter in words])
+    return decoded_message
+
+# Función para actualizar la interfaz gráfica
+def update_ui():
+    global morse_sequence
+    decoded_message = decode_morse(morse_sequence)
+    label.text = f"Secuencia: {morse_sequence}\nMensaje Decodificado: {decoded_message}"
+
+# Crear la interfaz de usuario
+view = ui.View()
+view.name = 'Detector de Morse'
+
+# Crear un botón para iniciar la grabación
+record_button = ui.Button(title='Grabar')
+record_button.frame = (50, 50, 200, 40)
+record_button.action = lambda sender: detect_morse()
+
+# Crear una etiqueta para mostrar el mensaje
+label = ui.Label(frame=(50, 150, 250, 200))
+label.alignment = ui.ALIGN_CENTER
+label.number_of_lines = 0
+
+# Añadir los elementos al `view`
+view.add_subview(record_button)
+view.add_subview(label)
+
+# Mostrar la interfaz de usuario
+view.present('sheet')
+</code>
+        </pre>
+    </section>
+
+    <section>
+        <h2>Explicación del Código</h2>
+        <p>El código se divide en varias partes clave:</p>
+        <ul>
+            <li><strong>Diccionario de Código Morse:</strong> Se utiliza para convertir las secuencias de puntos y rayas a letras y números.</li>
+            <li><strong>Configuración de Sonido:</strong> Configura la grabación de audio utilizando el micrófono del dispositivo.</li>
+            <li><strong>Función detect_morse():</strong> Detecta señales sonoras y las convierte en puntos o rayas según la duración del sonido.</li>
+            <li><strong>Función decode_morse():</strong> Convierte la secuencia de código Morse en un mensaje legible.</li>
+            <li><strong>Interfaz Gráfica:</strong> Utiliza el módulo `ui` de Pythonista para crear una interfaz simple que muestra la secuencia de Morse y el mensaje decodificado.</li>
+        </ul>
+    </section>
+
+    <section>
+        <h2>Consideraciones y Mejoras</h2>
+        <p>Este proyecto es una base para la detección de código Morse en tiempo real en dispositivos iOS. Se pueden agregar mejoras como el filtrado de audio, la capacidad de distinguir entre más sonidos o incluso utilizar un sistema más avanzado de visualización.</p>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 Proyecto de Código Morse en Pythonista</p>
+    </footer>
+</body>
+</html>
